@@ -1,0 +1,15 @@
+Grid#main-grid {
+    grid-size: 5;
+    width: 80;
+    height: 36;
+}
+
+Tile {
+    content-align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+VisibleTile {
+    border: round white;
+}
