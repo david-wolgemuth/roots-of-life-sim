@@ -92,13 +92,25 @@ class GameApp(App):
 
     def _update_tile_label(self, label: "TileLabel", tile: "Tile"):
         if tile.cell:
-            label.styles.background = "red"
+            if tile.cell.is_dead:
+                label.styles.background = "black"
+                label.update("")
+            else:
+                label.styles.background = "red"
+                label.update(
+                    f"w: {tile.cell.water}" +
+                    f"\nm: {tile.cell.minerals}" +
+                    f"\nc: {tile.cell.carbon}" +
+                    f"\ns: {tile.cell.sugar}"
+                )
+
         elif tile.is_dirt:
             label.styles.background = "brown"
+            label.update("")
+
         else:
             label.styles.background = "blue"
-
-        label.update(f"{tile.x}, {tile.y}")
+            label.update("")
 
     def _update_tile_info(self, data_table: "DataTable", tile: "Tile"):
         data_table.clear(columns=True)
@@ -113,7 +125,7 @@ class GameApp(App):
             data_table.add_row("water", f"{tile.cell.water}")
             data_table.add_row("minerals", f"{tile.cell.minerals}")
             data_table.add_row("carbon", f"{tile.cell.carbon}")
-            data_table.add_row("energy", f"{tile.cell.sugar}")
+            data_table.add_row("sugar", f"{tile.cell.sugar}")
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""

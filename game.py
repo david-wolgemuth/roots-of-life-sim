@@ -10,10 +10,22 @@ class CardinalDirection(Enum):
     West = "West"
 
 
+class Resource(Enum):
+    Mineral = "Mineral"
+    Sugar = "Sugar"
+    Water = "Water"
+    Carbon = "Carbon"
+
+
 North = CardinalDirection.North
 South = CardinalDirection.South
 East = CardinalDirection.East
 West = CardinalDirection.West
+
+Water = Resource.Water
+Sugar = Resource.Sugar
+Mineral = Resource.Mineral
+Carbon = Resource.Carbon
 
 MAX_WATER = 10
 MAX_MINERALS = 10
@@ -28,6 +40,9 @@ class LifeCell:
     water: int = 0
     carbon: int = 0
 
+    flow_direction: Tuple[CardinalDirection] = North, South, East, West
+    growth_direction: Tuple[CardinalDirection] = North, South, East, West
+
     age: int = 0
 
     @classmethod
@@ -39,14 +54,18 @@ class LifeCell:
             carbon=MAX_CARBON,
         )
 
+    @property
+    def is_dead(self) -> bool:
+        return self.age > 50
+
     def check_can_reproduce(self) -> bool:
-        if self.minerals < MAX_MINERALS:
+        if self.minerals < MAX_MINERALS // 2:
             return False
-        if self.sugar < MAX_SUGAR:
+        if self.sugar < MAX_SUGAR // 2:
             return False
-        if self.water < MAX_WATER:
+        if self.water < MAX_WATER // 2:
             return False
-        if self.carbon < MAX_CARBON:
+        if self.carbon < MAX_CARBON // 2:
             return False
         return True
 
@@ -153,7 +172,7 @@ class Game:
 
     @property
     def tiles_with_life_cells(self) -> List["Tile"]:
-        return [tile for tile in self.tiles.tiles.values() if tile.cell]
+        return [tile for tile in self.tiles.tiles.values() if (tile.cell and not tile.cell.is_dead)]
 
     def loop(self):
         """
@@ -184,7 +203,9 @@ class Game:
 
         for tile in self.tiles_with_life_cells:
 
-            for d in (North, South, East, West):
+            moved_resources = set()
+
+            for d in tile.cell.flow_direction:
                 adjacent_tile = self.tiles.get(*tile.adjacent_point(d))
 
                 if adjacent_tile.cell:
@@ -198,44 +219,72 @@ class Game:
                     if hash_value in already_balanced:
                         # already balanced
                         continue
-                    already_balanced.add(hash_value)
 
                     from_cell = max(a, b, key=lambda cell: cell.water)
                     to_cell = min(a, b, key=lambda cell: cell.water)
+                    if not to_cell.is_dead and from_cell.water > 0 and to_cell.water < MAX_WATER and abs(from_cell.water - to_cell.water) > 0:
+                        if Water not in moved_resources:
+                            from_cell.water -= 1
+                            to_cell.water += 1
+                            moved_resources.add(Water)
+                            already_balanced.add(hash_value)
 
-                    if from_cell.water > 0 and to_cell.water < MAX_WATER:
-                        from_cell.water -= 1
-                        to_cell.water += 1
+                    from_cell = max(a, b, key=lambda cell: cell.minerals)
+                    to_cell = min(a, b, key=lambda cell: cell.minerals)
+                    if not to_cell.is_dead and from_cell.minerals > 0 and to_cell.minerals < MAX_MINERALS and abs(from_cell.minerals - to_cell.minerals) > 0:
+                        if Mineral not in moved_resources:
+                            from_cell.minerals -= 1
+                            to_cell.minerals += 1
+                            moved_resources.add(Mineral)
+                            already_balanced.add(hash_value)
 
-                    if from_cell.minerals > 0 and to_cell.minerals < MAX_MINERALS:
-                        from_cell.minerals -= 1
-                        to_cell.minerals += 1
+                    from_cell = max(a, b, key=lambda cell: cell.sugar)
+                    to_cell = min(a, b, key=lambda cell: cell.sugar)
+                    if not to_cell.is_dead and from_cell.sugar > 0 and to_cell.sugar < MAX_SUGAR and abs(from_cell.sugar - to_cell.sugar) > 0:
+                        if Sugar not in moved_resources:
+                            from_cell.sugar -= 1
+                            to_cell.sugar += 1
+                            moved_resources.add(Sugar)
+                            already_balanced.add(hash_value)
 
-                    if from_cell.sugar > 0 and to_cell.sugar < MAX_SUGAR:
-                        from_cell.sugar -= 1
-                        to_cell.sugar += 1
-
-                    if from_cell.carbon > 0 and to_cell.carbon < MAX_CARBON:
-                        from_cell.carbon -= 1
-                        to_cell.carbon += 1
+                    from_cell = max(a, b, key=lambda cell: cell.carbon)
+                    to_cell = min(a, b, key=lambda cell: cell.carbon)
+                    if not to_cell.is_dead and from_cell.carbon > 0 and to_cell.carbon < MAX_CARBON and abs(from_cell.carbon - to_cell.carbon) > 0:
+                        if Carbon not in moved_resources:
+                            from_cell.carbon -= 1
+                            to_cell.carbon += 1
+                            moved_resources.add(Carbon)
+                            already_balanced.add(hash_value)
 
                 elif adjacent_tile.is_dirt:
                     if tile.cell.minerals < MAX_MINERALS:
-                        tile.cell.minerals += 1
+                        if Mineral not in moved_resources:
+                            tile.cell.minerals += 1
+                            moved_resources.add(Mineral)
 
-                    if tile.cell.water < MAX_WATER:
-                        tile.cell.water += 1
+                    if tile.cell.water < MAX_WATER and d in (South,):
+                        if Water not in moved_resources:
+                            tile.cell.water += 1
+                            moved_resources.add(Water)
 
                 else:
                     # sky
                     if tile.cell.carbon < MAX_CARBON:
-                        tile.cell.carbon += 1
+                        if Carbon not in moved_resources:
+                            tile.cell.carbon += 1
+                            moved_resources.add(Carbon)
 
-                    if tile.cell.sugar < MAX_SUGAR:
-                        tile.cell.sugar += 1
+                    if tile.cell.sugar < MAX_SUGAR and d in (North,):
+                        if Sugar not in moved_resources:
+                            tile.cell.sugar += 1
+                            moved_resources.add(Sugar)
 
+        # after moving all resources,
+        #   reproduce tiles
+
+        for tile in self.tiles_with_life_cells:
             if tile.cell.check_can_reproduce():
-                for d in (North, South, East, West):
+                for d in tile.cell.growth_direction:
                     x, y = tile.adjacent_point(d)
                     if not self.tiles.get(x, y).cell:
                         new_cell = tile.cell.reproduce()

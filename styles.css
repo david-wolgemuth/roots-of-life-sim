@@ -1,7 +1,7 @@
 Grid#main-grid {
     grid-size: 9;
     width: 80;
-    height: 40;
+    height: 50;
 }
 
 TileLabel {
@@ -11,5 +11,5 @@ TileLabel {
 }
 
 TileLabel#label-4-4 {
-    outline: solid green;
+    border: vkey green;
 }
