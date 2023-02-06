@@ -1,15 +1,15 @@
 Grid#main-grid {
-    grid-size: 5;
+    grid-size: 9;
     width: 80;
-    height: 36;
+    height: 40;
 }
 
-Tile {
+TileLabel {
     content-align: center middle;
     width: 100%;
     height: 100%;
 }
 
-VisibleTile {
-    border: round white;
+TileLabel#label-4-4 {
+    outline: solid green;
 }
