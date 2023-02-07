@@ -22,6 +22,8 @@ const MAX_MINERALS = 10
 const MAX_CARBON = 10
 const MAX_SUGAR = 10
 
+const DEATH_AGE = 240;
+
 
 class LifeCell {
     // all resources max capacity of 10
@@ -53,7 +55,7 @@ class LifeCell {
   }
 
   get is_dead() {
-    return this.age > 50
+    return this.age >= DEATH_AGE;
   }
 
   check_can_reproduce() {

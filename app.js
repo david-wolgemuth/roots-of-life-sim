@@ -1,10 +1,10 @@
 
-const GRID_SIZE = 9
-const CENTER = 5
-const RADIUS = 4
+const RADIUS = 24;
+const CENTER = RADIUS + 1;
+const GRID_SIZE = RADIUS * 2 + 1;
 
 
-const TICK_RATE = 100
+const TICK_RATE = 50
 
 class GameApp {
     constructor() {
@@ -85,23 +85,24 @@ class GameApp {
     _update_tile_label(label, tile) {
         if (tile.cell) {
             if (tile.cell.is_dead) {
-                label.style.background = "black"
+                label.style.background = "dimgrey"
                 label.innerHTML = ""
             } else {
-                label.style.background = "red"
-                label.innerHTML =`
-                    w: ${tile.cell.water}
-                    m: ${tile.cell.minerals}
-                    c: ${tile.cell.carbon}
-                    ns: ${tile.cell.sugar}
-                `;
+                label.style.background = "brown"
+                label.innerHTML ='';
+                // `
+                //     w: ${tile.cell.water}
+                //     m: ${tile.cell.minerals}
+                //     c: ${tile.cell.carbon}
+                //     ns: ${tile.cell.sugar}
+                // `;
             }
         } else if (tile.is_dirt) {
-            label.style.background = "brown"
-            label.innerHTML = `${tile.x}, ${tile.y}`
+            label.style.background = "rosybrown"
+            label.innerHTML = '';
         } else {
-            label.style.background = "blue"
-            label.innerHTML = `${tile.x}, ${tile.y}`
+            label.style.background = "skyblue"
+            label.innerHTML = '';
         }
     }
 
