@@ -34,7 +34,7 @@ const WIDTH = 64;
 
 class LifeCell {
   // all resources max capacity of 10
-  constructor({
+  constructor(organismId, {
     minerals,
     sugar,
     water,
@@ -43,6 +43,7 @@ class LifeCell {
     growth_direction,
     age,
   }) {
+    this.organismId = organismId;
     this.minerals = minerals || 0;
     this.sugar = sugar || 0;
     this.water = water || 0;
@@ -53,7 +54,7 @@ class LifeCell {
   }
 
   static seed() {
-    return new LifeCell({
+    return new LifeCell(Math.random(), {
       minerals: MAX_MINERALS,
       sugar: MAX_SUGAR,
       water: MAX_WATER,
@@ -86,7 +87,7 @@ class LifeCell {
   }
 
   reproduce() {
-    const cell = new LifeCell({});
+    const cell = new LifeCell(this.organismId, {});
     cell.minerals = Math.floor(this.minerals / 2);
     this.minerals = Math.floor(this.minerals / 2);
 
@@ -211,6 +212,12 @@ class Game {
     });
   }
 
+  addNewOrganism(x, y) {
+    const tile = this.tiles.get(x, y);
+    const seed = LifeCell.seed();
+    tile.cell = seed;
+  }
+
   /**
    *
     birth / reproduction
@@ -244,7 +251,7 @@ class Game {
       for (const d of tile.cell.flow_direction) {
         const adjacent_tile = this.tiles.get(...tile.adjacent_point(d));
 
-        if (adjacent_tile.cell) {
+        if (adjacent_tile.cell && adjacent_tile.cell.organismId === tile.cell.organismId) {
           const a = tile.cell;
           const [ax, ay] = [tile.x, tile.y];
           const b = adjacent_tile.cell;

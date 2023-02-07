@@ -1,13 +1,36 @@
-const RADIUS = 64;
+const RADIUS = 84;
 const CENTER = RADIUS + 1;
 const GRID_SIZE = RADIUS * 2 + 1;
 
 const TICK_RATE = 10;
 
+const COLORS = [
+  'Aqua',
+  'Aquamarine',
+  'Beige',
+  'Bisque',
+  'BlanchedAlmond',
+  'Chocolate',
+  'DarkGoldenRod',
+  'DarkOliveGreen',
+  'DarkRed',
+  'DarkSalmon',
+  'DarkSeaGreen',
+  'DarkTurquoise',
+  'Green',
+  'Olive',
+  'OliveDrab',
+  'SpringGreen',
+  'Thistle',
+]
+
 class GameApp {
   constructor() {
     this.game = new Game();
     document.addEventListener("keypress", (e) => this.onkeypress(e));
+    this.organisms = {
+
+    };
   }
 
   run() {
@@ -46,7 +69,7 @@ class GameApp {
 
   get_grid_data() {
     const data = [
-      // (x, y, label_id, tile, visible)
+      // (x, y, tileDivId, tile, visible)
     ];
     for (let i = 0; i < GRID_SIZE; i += 1) {
       for (let j = 0; j < GRID_SIZE; j += 1) {
@@ -56,11 +79,11 @@ class GameApp {
 
         // # dist = abs(this.game.cursor_x - x) + abs(this.game.cursor_y - y)
         // # visible = dist < RADIUS + 1
-        const label_id = `label-${i}-${j}`;
+        const tileDivId = `tile-${i}-${j}`;
         const tile = this.game.tiles.get(x, y);
         data.push({
           // # "visible": visible,
-          label_id: label_id,
+          tileDivId: tileDivId,
           tile: tile,
         });
       }
@@ -70,8 +93,8 @@ class GameApp {
 
   update_display() {
     for (const tile_data of this.get_grid_data()) {
-      const label = document.querySelector("#" + tile_data["label_id"]);
-      this._update_tile_label(label, tile_data["tile"]);
+      const tileDiv = document.querySelector("#" + tile_data["tileDivId"]);
+      this._update_tile_tileDiv(tileDiv, tile_data["tile"]);
     }
 
     this._update_tile_info(
@@ -80,14 +103,25 @@ class GameApp {
     );
   }
 
-  _update_tile_label(label, tile) {
+  _update_tile_tileDiv(tileDiv, tile) {
+
+    tileDiv.dataset.x = tile.x
+    tileDiv.dataset.y = tile.y
+
     if (tile.cell) {
       if (tile.cell.is_dead) {
-        label.style.background = "dimgrey";
-        label.innerHTML = "";
+        tileDiv.style.background = "whitesmoke";
+        tileDiv.innerHTML = "";
       } else {
-        label.style.background = "lightseagreen";
-        label.innerHTML = "";
+        let color;
+        if (this.organisms[tile.cell.organismId]) {
+          color = this.organisms[tile.cell.organismId];
+        } else {
+          this.organisms[tile.cell.organismId] = COLORS[Math.floor(Math.random()*COLORS.length)]
+          color = this.organisms[tile.cell.organismId];
+        }
+        tileDiv.style.background = color;
+        tileDiv.innerHTML = "";
         // `
         //     w: ${tile.cell.water}
         //     m: ${tile.cell.minerals}
@@ -96,15 +130,15 @@ class GameApp {
         // `;
       }
     } else if (tile.type === Sky) {
-      label.style.background = "skyblue";
-      label.innerHTML = "";
+      tileDiv.style.background = "skyblue";
+      tileDiv.innerHTML = "";
     } else if (tile.type === Dirt) {
-      label.style.background = "rosybrown";
-      label.innerHTML = "";
+      tileDiv.style.background = "rosybrown";
+      tileDiv.innerHTML = "";
     } else {
       // invisible border
-      label.style.background = "white";
-      label.innerHTML = "";
+      tileDiv.style.background = "white";
+      tileDiv.innerHTML = "";
     }
   }
 
@@ -128,6 +162,13 @@ class GameApp {
     data_table.innerHTML = `<dl>${html}</dl>`;
   }
 
+  onClickTile(e) {
+    const x = e.target.dataset.x;
+    const y = e.target.dataset.y;
+    console.log(x, y)
+    this.game.addNewOrganism(x, y);
+  }
+
   setupLayout() {
     const tile_info_data_table = document.createElement("div");
     tile_info_data_table.id = "tile-info";
@@ -146,15 +187,18 @@ class GameApp {
 
         // # dist = abs(this.game.cursor_x - x) + abs(this.game.cursor_y - y)
         // # visible = dist < RADIUS + 1
-        const label_id = `label-${i}-${j}`;
+        const tileDivId = `tile-${i}-${j}`;
         const tile = this.game.tiles.get(x, y);
 
-        const label = document.createElement("div");
-        label.classList.add("tile");
-        label.id = label_id;
-        this._update_tile_label(label, tile);
+        const tileDiv = document.createElement("div");
+        tileDiv.classList.add("tile");
+        tileDiv.id = tileDivId;
 
-        row.appendChild(label);
+        tileDiv.onclick = e => this.onClickTile(e);
+
+        this._update_tile_tileDiv(tileDiv, tile);
+
+        row.appendChild(tileDiv);
       }
       container.appendChild(row);
     }
