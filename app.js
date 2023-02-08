@@ -1,36 +1,30 @@
-const RADIUS = 84;
-const CENTER = RADIUS + 1;
+import { Game, Sky, Dirt } from './game.js';
+
+const RADIUS = 80; // not actually radius
 const GRID_SIZE = RADIUS * 2 + 1;
+
+const GAME_WIDTH = 64;
 
 const TICK_RATE = 10;
 
 const COLORS = [
-  'Aqua',
-  'Aquamarine',
-  'Beige',
-  'Bisque',
-  'BlanchedAlmond',
-  'Chocolate',
-  'DarkGoldenRod',
   'DarkOliveGreen',
-  'DarkRed',
-  'DarkSalmon',
   'DarkSeaGreen',
   'DarkTurquoise',
   'Green',
   'Olive',
+  'ForestGreen',
+  'LightSeaGreen',
+  'MediumSeaGreen',
   'OliveDrab',
-  'SpringGreen',
-  'Thistle',
+  'SeaGreen',
 ]
 
 class GameApp {
   constructor() {
-    this.game = new Game();
+    this.game = new Game(GAME_WIDTH);
     document.addEventListener("keypress", (e) => this.onkeypress(e));
-    this.organisms = {
-
-    };
+    this.organismColors = {};
   }
 
   run() {
@@ -108,38 +102,59 @@ class GameApp {
     tileDiv.dataset.x = tile.x
     tileDiv.dataset.y = tile.y
 
+    let title = `x: ${tile.x}, y: ${tile.y}`;
     if (tile.cell) {
-      if (tile.cell.is_dead) {
-        tileDiv.style.background = "whitesmoke";
+      const cell = tile.cell;
+      if (cell.is_dead) {
+        // const color = this.organismColors[cell.organismId];
+        // tileDiv.style.background = color;
+        tileDiv.style.outline = '1px dashed tan'
         tileDiv.innerHTML = "";
       } else {
-        let color;
-        if (this.organisms[tile.cell.organismId]) {
-          color = this.organisms[tile.cell.organismId];
+        tileDiv.style.outline = ''
+        // let color;
+        // if (this.organismColors[cell.organismId]) {
+        //   color = this.organismColors[cell.organismId];
+        // } else {
+        //   this.organismColors[cell.organismId] = COLORS[Math.floor(Math.random()*COLORS.length)]
+        //   color = this.organismColors[cell.organismId];
+        // }
+        if (cell.chloroplasts < 2) {
+          tileDiv.style.background = 'Tan';
+        } else if (cell.chloroplasts < 4) {
+          tileDiv.style.background = 'RosyBrown';
+        } else if (cell.chloroplasts < 6) {
+          tileDiv.style.background = 'Olive';
+        } else if (cell.chloroplasts < 8) {
+          tileDiv.style.background = 'OliveDrab';
         } else {
-          this.organisms[tile.cell.organismId] = COLORS[Math.floor(Math.random()*COLORS.length)]
-          color = this.organisms[tile.cell.organismId];
+          tileDiv.style.background = 'MediumSeaGreen';
         }
-        tileDiv.style.background = color;
-        tileDiv.innerHTML = "";
-        // `
-        //     w: ${tile.cell.water}
-        //     m: ${tile.cell.minerals}
-        //     c: ${tile.cell.carbon}
-        //     ns: ${tile.cell.sugar}
-        // `;
+        // tileDiv.innerHTML = "";
+        tileDiv.innerHTML = `${cell.water},${cell.minerals}<br>${cell.carbon},${cell.sugar}`;
       }
+      title += `water: ${cell.water}, minerals: ${cell.minerals}, carbon: ${cell.carbon}, sugar: ${cell.sugar}`
     } else if (tile.type === Sky) {
+      tileDiv.style.outline = ''
       tileDiv.style.background = "skyblue";
       tileDiv.innerHTML = "";
     } else if (tile.type === Dirt) {
-      tileDiv.style.background = "rosybrown";
+      tileDiv.style.outline = ''
+      if (tile.resources.Water > 16) {
+        tileDiv.style.background = "Chocolate";
+      } else if (tile.resources.Water > 8) {
+        tileDiv.style.background = "Peru";
+      } else {
+        tileDiv.style.background = "SandyBrown";
+      }
       tileDiv.innerHTML = "";
     } else {
       // invisible border
+      tileDiv.style.outline = ''
       tileDiv.style.background = "white";
       tileDiv.innerHTML = "";
     }
+    tileDiv.title = title;
   }
 
   _update_tile_info(data_table, tile) {
@@ -195,6 +210,9 @@ class GameApp {
         tileDiv.id = tileDivId;
 
         tileDiv.onclick = e => this.onClickTile(e);
+
+        // tileDiv.onmouseenter = e => this.onMouseEnter(e);
+        // tileDiv.onmouseleave = e => this.onMouseLeave(e);
 
         this._update_tile_tileDiv(tileDiv, tile);
 
