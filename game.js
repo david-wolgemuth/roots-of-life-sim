@@ -28,8 +28,7 @@ const MAX_CARBON = 10;
 const MAX_SUGAR = 10;
 const MAX_CHLOROPLASTS = 10;
 
-const DEATH_AGE = 240;
-const DETERIORATION_AGE = 480;
+const DETERIORATION_AGE = 120;
 
 function _shuffle(array) {
   // NOTE - modifies input
@@ -61,7 +60,7 @@ class LifeCell {
     this.chloroplasts = chloroplasts || 0;
 
     this.age = 0;
-    this.is_dead = false;
+    this.death_age = null;
   }
 
   static seed() {
@@ -74,15 +73,15 @@ class LifeCell {
     });
   }
 
-  // get is_dead() {
-  //   return this.age >= DEATH_AGE;
-  // }
+  get is_dead() {
+    return Boolean(this.death_age)
+  }
 
   check_can_reproduce() {
     if (this.chloroplasts > MAX_CHLOROPLASTS / 2) {
-      return this.sugar >= MAX_SUGAR - 1 && this.water > MAX_WATER / 2 && this.carbon > MAX_CARBON / 2;
+      return this.sugar >= MAX_SUGAR / 1 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
     } else {
-      return this.water >= MAX_WATER - 1 && this.sugar > MAX_SUGAR / 2 && this.minerals > MAX_MINERALS / 2;
+      return this.water >= MAX_WATER / 1 && this.sugar > 8 && this.minerals > 4 && this.carbon > 2;
     }
   }
 
@@ -157,9 +156,9 @@ class TileGrid {
           y,
           type: Dirt,
           resources: {
-            Mineral: 10,
+            Mineral: MAX_MINERALS * 3,
             // deeper has more water
-            Water: (Math.floor(y / 4) + 8),  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
+            Water: Math.floor((y + 32) / 2),  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
           }
         });
       } else {
@@ -263,10 +262,13 @@ export class Game {
     const already_balanced = new Set();
 
     for (const tile of this.get_tiles_with_life_cells()) {
-      // if (tile.cell.sugar < 0) {
-      //   tile.cell.is_dead = true;
-      //   continue;
-      // }
+      if (tile.cell.sugar < 0) {
+        tile.cell.death_age = tile.cell.age;
+        continue;
+      }
+      if (tile.cell.age % 10 === 0) {
+        tile.cell.sugar -= 1;
+      }
       const moved_resources = new Set();
 
       for (const d of _shuffle(Object.values(CardinalDirection))) {
@@ -326,13 +328,13 @@ export class Game {
           to_cell = min(a, b, (cell) => cell.sugar);
           if (
             !to_cell.is_dead &&
-            from_cell.sugar > 0 &&
+            from_cell.sugar > 5 &&
             (to_cell.sugar < MAX_SUGAR) &
               (Math.abs(from_cell.sugar - to_cell.sugar) > 0)
           ) {
             if (!moved_resources.has(Sugar)) {
-              from_cell.sugar -= 1;
-              to_cell.sugar += 1;
+              from_cell.sugar -= 2;
+              to_cell.sugar += 2;
               moved_resources.add(Sugar);
               already_balanced.add(hash_value);
             }
@@ -386,7 +388,7 @@ export class Game {
 
           if (tile.cell.sugar < MAX_SUGAR && tile.cell.carbon > 0 && tile.cell.water > 0 && d === North) {
             if (!moved_resources.has(Sugar)) {
-              tile.cell.sugar += 1 * (Math.floor(tile.cell.chloroplasts / 2) + 1);
+              tile.cell.sugar += 1 * (tile.cell.chloroplasts + 2);
               tile.cell.water -= 1;
               tile.cell.carbon -= 1;
               // moved_resources.add(Sugar);
@@ -416,13 +418,43 @@ export class Game {
 
     // break down dead cells
     for (const tile of this.get_tiles_with_dead_life_cells()) {
-      if (tile.cell.age === DETERIORATION_AGE) {
+      if (tile.cell.age - tile.cell.death_age === DETERIORATION_AGE) {
+        tile.resources.Water = tile.cell.water;
+        tile.resources.Mineral = tile.cell.minerals;
         tile.cell = null;
         tile.type = Dirt;
       } else {
         tile.cell.age += 1;
       }
     }
+
+    const alreadyBalancedDirt = new Set();
+    Object.values(this.tiles.tiles).filter((tile) => {
+      return !tile.cell && tile.type === Dirt
+    }).forEach(tile => {
+      for (const d of _shuffle([East, West, South])) {
+        const [x, y] = tile.adjacent_point(d);
+
+        const [ax, ay] = [tile.x, tile.y];
+        const adjacent_tile = this.tiles.get(x, y)
+        const [bx, by] = [adjacent_tile.x, adjacent_tile.y];
+        const hash_value = `${Math.min(ax, bx)},${Math.min(
+          ay,
+          by
+        )},${Math.max(ax, bx)},${Math.max(ay, by)}`;
+        if (alreadyBalancedDirt.has(hash_value)) {
+          // already balanced
+          break;
+        }
+
+        if (adjacent_tile.type === Dirt && adjacent_tile.resources.Water - 2 > tile.resources.Water) {
+          adjacent_tile.resources.Water -= 1
+          tile.resources.Water += 1
+          alreadyBalancedDirt.add(hash_value)
+          break;
+        }
+      }
+    });
 
     this.ticks += 1;
   }

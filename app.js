@@ -1,6 +1,6 @@
 import { Game, Sky, Dirt } from './game.js';
 
-const RADIUS = 80; // not actually radius
+const RADIUS = 36; // not actually radius
 const GRID_SIZE = RADIUS * 2 + 1;
 
 const GAME_WIDTH = 64;
@@ -140,9 +140,9 @@ class GameApp {
       tileDiv.innerHTML = "";
     } else if (tile.type === Dirt) {
       tileDiv.style.outline = ''
-      if (tile.resources.Water > 16) {
+      if (tile.resources.Water > 24) {
         tileDiv.style.background = "Chocolate";
-      } else if (tile.resources.Water > 8) {
+      } else if (tile.resources.Water > 16) {
         tileDiv.style.background = "Peru";
       } else {
         tileDiv.style.background = "SandyBrown";
