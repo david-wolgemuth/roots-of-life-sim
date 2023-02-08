@@ -119,16 +119,19 @@ class GameApp {
         //   this.organismColors[cell.organismId] = COLORS[Math.floor(Math.random()*COLORS.length)]
         //   color = this.organismColors[cell.organismId];
         // }
-        if (cell.chloroplasts < 2) {
-          tileDiv.style.background = 'Tan';
-        } else if (cell.chloroplasts < 4) {
-          tileDiv.style.background = 'RosyBrown';
-        } else if (cell.chloroplasts < 6) {
-          tileDiv.style.background = 'Olive';
-        } else if (cell.chloroplasts < 8) {
-          tileDiv.style.background = 'OliveDrab';
+        if (cell.chloroplasts < 5) {
+          if (cell.water < 5) {
+            tileDiv.style.background = 'GoldenRod';
+          } else {
+            tileDiv.style.background = 'DarkGoldenRod';
+            // tileDiv.style.background = 'DarkGoldenRod';
+          }
         } else {
-          tileDiv.style.background = 'MediumSeaGreen';
+          if (cell.water < 5) {
+            tileDiv.style.background = 'MediumSeaGreen';
+          } else {
+            tileDiv.style.background = 'SeaGreen';
+          }
         }
         // tileDiv.innerHTML = "";
         tileDiv.innerHTML = `${cell.water},${cell.minerals}<br>${cell.carbon},${cell.sugar}`;

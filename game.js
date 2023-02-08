@@ -51,7 +51,7 @@ class LifeCell {
     carbon,
     chloroplasts,
   }) {
-    this.organismId = organismId;
+    // this.organismId = organismId;  DISABLE
 
     this.minerals = minerals || 0;
     this.sugar = sugar || 0;
@@ -65,11 +65,11 @@ class LifeCell {
 
   static seed() {
     return new LifeCell(Math.random(), {
-      minerals: MAX_MINERALS * 2,
-      sugar: MAX_SUGAR * 2,
-      water: MAX_WATER * 2,
-      carbon: MAX_CARBON * 2,
-      chloroplasts: MAX_CHLOROPLASTS * 2,
+      minerals: MAX_MINERALS * 12,
+      sugar: MAX_SUGAR * 48,
+      water: MAX_WATER * 12,
+      carbon: MAX_CARBON * 12,
+      chloroplasts: MAX_CHLOROPLASTS * 4,
     });
   }
 
@@ -79,9 +79,11 @@ class LifeCell {
 
   check_can_reproduce() {
     if (this.chloroplasts > MAX_CHLOROPLASTS / 2) {
-      return this.sugar >= MAX_SUGAR / 1 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
+      // leaf
+      return this.sugar >= MAX_SUGAR - 2 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
     } else {
-      return this.water >= MAX_WATER / 1 && this.sugar > 8 && this.minerals > 4 && this.carbon > 2;
+      // root
+      return this.water >= MAX_WATER / 2 && this.sugar > 2 && this.minerals > 2 && this.carbon > 2;
     }
   }
 
@@ -158,7 +160,7 @@ class TileGrid {
           resources: {
             Mineral: MAX_MINERALS * 3,
             // deeper has more water
-            Water: Math.floor((y + 32) / 2),  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
+            Water: y + 8,  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
           }
         });
       } else {
@@ -262,16 +264,16 @@ export class Game {
     const already_balanced = new Set();
 
     for (const tile of this.get_tiles_with_life_cells()) {
-      if (tile.cell.sugar < 0) {
+      if (tile.cell.sugar < -2) {
         tile.cell.death_age = tile.cell.age;
         continue;
       }
-      if (tile.cell.age % 10 === 0) {
+      if (tile.cell.age % 20 === 0) {
         tile.cell.sugar -= 1;
       }
       const moved_resources = new Set();
 
-      for (const d of _shuffle(Object.values(CardinalDirection))) {
+      for (const d of _shuffle([West, South, East, North])) {
         const adjacent_tile = this.tiles.get(...tile.adjacent_point(d));
 
         if (adjacent_tile.cell && adjacent_tile.cell.organismId === tile.cell.organismId) {
@@ -298,7 +300,7 @@ export class Game {
             !to_cell.is_dead &&
             from_cell.water > 0 &&
             (to_cell.water < MAX_WATER) &
-              (Math.abs(from_cell.water - to_cell.water) > 0)
+              (Math.abs(from_cell.water - to_cell.water) > 1)
           ) {
             if (!moved_resources.has(Water)) {
               from_cell.water -= 1;
@@ -314,7 +316,7 @@ export class Game {
             !to_cell.is_dead &&
             from_cell.minerals > 0 &&
             (to_cell.minerals < MAX_MINERALS) &
-              (Math.abs(from_cell.minerals - to_cell.minerals) > 0)
+              (Math.abs(from_cell.minerals - to_cell.minerals) > 1)
           ) {
             if (!moved_resources.has(Mineral)) {
               from_cell.minerals -= 1;
@@ -330,7 +332,7 @@ export class Game {
             !to_cell.is_dead &&
             from_cell.sugar > 5 &&
             (to_cell.sugar < MAX_SUGAR) &
-              (Math.abs(from_cell.sugar - to_cell.sugar) > 0)
+              (Math.abs(from_cell.sugar - to_cell.sugar) > 1)
           ) {
             if (!moved_resources.has(Sugar)) {
               from_cell.sugar -= 2;
@@ -346,7 +348,7 @@ export class Game {
             !to_cell.is_dead &&
             from_cell.carbon > 0 &&
             (to_cell.carbon < MAX_CARBON) &
-              (Math.abs(from_cell.carbon - to_cell.carbon) > 0)
+              (Math.abs(from_cell.carbon - to_cell.carbon) > 1)
           ) {
             if (!moved_resources.has(Carbon)) {
               from_cell.carbon -= 1;
@@ -386,9 +388,9 @@ export class Game {
             }
           }
 
-          if (tile.cell.sugar < MAX_SUGAR && tile.cell.carbon > 0 && tile.cell.water > 0 && d === North) {
+          if (tile.cell.sugar < MAX_SUGAR && tile.cell.carbon > 2 && tile.cell.water > 2 && d === North) {
             if (!moved_resources.has(Sugar)) {
-              tile.cell.sugar += 1 * (tile.cell.chloroplasts + 2);
+              tile.cell.sugar += 2 * tile.cell.chloroplasts;
               tile.cell.water -= 1;
               tile.cell.carbon -= 1;
               // moved_resources.add(Sugar);
@@ -402,14 +404,40 @@ export class Game {
     //   reproduce tiles
     for (const tile of this.get_tiles_with_life_cells()) {
       if (tile.cell.check_can_reproduce()) {
-        for (const d of _shuffle(Object.values(CardinalDirection))) {
+        // leaf
+        let preferredDirection;
+        let directionsToCheck;
+        if (tile.cell.chloroplasts > 5) {
+          // leaf
+          directionsToCheck = [North, East, West, South]
+        } else {
+          // root
+          directionsToCheck = [South, East, West, North]
+        }
+        for (const d of directionsToCheck) {
           const [x, y] = tile.adjacent_point(d);
           const adjacent_tile = this.tiles.get(x, y)
           if (adjacent_tile.type !== InvisibleBorder && !adjacent_tile.cell) {
+            if (!preferredDirection) {
+              preferredDirection = d;
+            } else {
+              const otherTile = this.tiles.get(x, y);
+              const countSpaces = [North, South, East, West].filter(d2 => {
+                const [x2, y2] = otherTile.adjacent_point(d2);
+                const otherOtherTile = this.tiles.get(x2, y2);
+                return otherOtherTile.type !== InvisibleBorder && !otherOtherTile.cell;
+              }).length
+              if (countSpaces >= 2) {
+                console.log('preferred direction', countSpaces)
+                preferredDirection = d
+              }
+            }
+          }
+        }
+        if (preferredDirection) {
+            const [x, y] = tile.adjacent_point(preferredDirection);
             const new_cell = tile.cell.reproduce();
             this.tiles.get(x, y).cell = new_cell;
-            break;
-          }
         }
       }
 
