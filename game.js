@@ -1,3 +1,5 @@
+import Config from './config.js';
+
 const CardinalDirection = {
   North: "North",
   South: "South",
@@ -22,12 +24,6 @@ export const { North, South, East, West } = CardinalDirection;
 export const { Water, Sugar, Mineral, Carbon } = Resource;
 export const { Dirt, Sky, InvisibleBorder } = TileType
 
-const MAX_WATER = 10;
-const MAX_MINERALS = 10;
-const MAX_CARBON = 10;
-const MAX_SUGAR = 10;
-const MAX_CHLOROPLASTS = 10;
-
 const DETERIORATION_AGE = 120;
 
 function _shuffle(array) {
@@ -44,14 +40,14 @@ function _shuffle(array) {
 
 class LifeCell {
   // all resources max capacity of 10
-  constructor(organismId, {
+  constructor(config, {
     minerals,
     sugar,
     water,
     carbon,
     chloroplasts,
   }) {
-    // this.organismId = organismId;  DISABLE
+    this.config = config;
 
     this.minerals = minerals || 0;
     this.sugar = sugar || 0;
@@ -63,13 +59,16 @@ class LifeCell {
     this.death_age = null;
   }
 
-  static seed() {
-    return new LifeCell(Math.random(), {
-      minerals: MAX_MINERALS * 12,
-      sugar: MAX_SUGAR * 48,
-      water: MAX_WATER * 12,
-      carbon: MAX_CARBON * 12,
-      chloroplasts: MAX_CHLOROPLASTS * 4,
+  /**
+   * @param {Config} config
+   */
+  static seed(config) {
+    return new LifeCell(config, {
+      minerals: config.maxMinerals * 12,
+      sugar: config.maxSugar * 48,
+      water: config.maxWater * 12,
+      carbon: config.maxCarbon * 12,
+      chloroplasts: config.maxChloroplasts * 4,
     });
   }
 
@@ -78,17 +77,17 @@ class LifeCell {
   }
 
   check_can_reproduce() {
-    if (this.chloroplasts > MAX_CHLOROPLASTS / 2) {
+    if (this.chloroplasts > this.config.maxChloroplasts / 2) {
       // leaf
-      return this.sugar >= MAX_SUGAR - 2 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
+      return this.sugar >= this.config.maxSugar - 2 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
     } else {
       // root
-      return this.water >= MAX_WATER / 2 && this.sugar > 2 && this.minerals > 2 && this.carbon > 2;
+      return this.water >= this.config.maxWater / 2 && this.sugar > 2 && this.minerals > 2 && this.carbon > 2;
     }
   }
 
   reproduce() {
-    const cell = new LifeCell(this.organismId, {});
+    const cell = new LifeCell(this.config, {});
     cell.minerals = Math.floor(this.minerals / 2);
     this.minerals = Math.floor(this.minerals / 2);
 
@@ -138,9 +137,12 @@ class Tile {
 }
 
 class TileGrid {
-  constructor(width) {
+  /**
+   * @param {Config} config
+   */
+  constructor(config) {
+    this.config = config;
     this.tiles = {};
-    this.width = width;
   }
 
   get(x, y) {
@@ -149,7 +151,7 @@ class TileGrid {
       return this.tiles[key];
     } else {
       let tile;
-      if (Math.abs(x) > this.width / 2) {
+      if (Math.abs(x) > this.config.gridWidth / 2) {
         tile = new Tile({ x, y, type: InvisibleBorder });
       } else if (y >= 0) {
         // negative is north
@@ -158,7 +160,7 @@ class TileGrid {
           y,
           type: Dirt,
           resources: {
-            Mineral: MAX_MINERALS * 3,
+            Mineral: this.config.maxMinerals * 3,
             // deeper has more water
             Water: y + 8,  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
           }
@@ -189,33 +191,34 @@ function min(a, b, key) {
 
 /**
  *
-    should it be 2d (matrix)
-        - easier to visualize
-
-    or free graph (node connections)
-        - more flexible
-
-    - how to represent a treenode and a resource occupying the same location (touching?)
-        a "connection"
-
-    a view could show all connections from selected node
-        connection
+ *    should it be 2d (matrix)
+ *        - easier to visualize
+ *
+ *    or free graph (node connections)
+ *        - more flexible
+ *
+ *    - how to represent a treenode and a resource occupying the same location (touching?)
+ *        a "connection"
+ *
+ *    a view could show all connections from selected node
+ *        connection
  */
 export class Game {
-  constructor(width) {
-    this.cursor_x = 0;
-    this.cursor_y = 0;
-    this.ticks = 0;
-    this.tiles = new TileGrid(width);
 
-    const seed = LifeCell.seed();
+  /**
+   *
+   * @param {Config} config
+   */
+  constructor(config) {
+    this.config = config
+    this.ticks = 0;
+    this.tiles = new TileGrid(config);
+    console.log(this)
+
+    const seed = LifeCell.seed(this.config);
     const seed_tile = new Tile({ x: 0, y: 0, type: Dirt });
     seed_tile.cell = seed;
     this.tiles.tiles["0_0"] = seed_tile;
-  }
-
-  get_selected_tile() {
-    return this.tiles.get(this.cursor_x, this.cursor_y);
   }
 
   get_tiles_with_life_cells() {
@@ -232,7 +235,7 @@ export class Game {
 
   addNewOrganism(x, y) {
     const tile = this.tiles.get(x, y);
-    const seed = LifeCell.seed();
+    const seed = LifeCell.seed(this.config);
     tile.cell = seed;
   }
 
@@ -299,7 +302,7 @@ export class Game {
           if (
             !to_cell.is_dead &&
             from_cell.water > 0 &&
-            (to_cell.water < MAX_WATER) &
+            (to_cell.water < this.config.maxWater) &
               (Math.abs(from_cell.water - to_cell.water) > 1)
           ) {
             if (!moved_resources.has(Water)) {
@@ -315,7 +318,7 @@ export class Game {
           if (
             !to_cell.is_dead &&
             from_cell.minerals > 0 &&
-            (to_cell.minerals < MAX_MINERALS) &
+            (to_cell.minerals < this.config.maxMinerals) &
               (Math.abs(from_cell.minerals - to_cell.minerals) > 1)
           ) {
             if (!moved_resources.has(Mineral)) {
@@ -331,7 +334,7 @@ export class Game {
           if (
             !to_cell.is_dead &&
             from_cell.sugar > 5 &&
-            (to_cell.sugar < MAX_SUGAR) &
+            (to_cell.sugar < this.config.maxSugar) &
               (Math.abs(from_cell.sugar - to_cell.sugar) > 1)
           ) {
             if (!moved_resources.has(Sugar)) {
@@ -347,7 +350,7 @@ export class Game {
           if (
             !to_cell.is_dead &&
             from_cell.carbon > 0 &&
-            (to_cell.carbon < MAX_CARBON) &
+            (to_cell.carbon < this.config.maxCarbon) &
               (Math.abs(from_cell.carbon - to_cell.carbon) > 1)
           ) {
             if (!moved_resources.has(Carbon)) {
@@ -358,7 +361,7 @@ export class Game {
             }
           }
         } else if (adjacent_tile.type === Dirt) {
-          if (tile.cell.minerals < MAX_MINERALS && adjacent_tile.resources.Mineral > 0) {
+          if (tile.cell.minerals < this.config.maxMinerals && adjacent_tile.resources.Mineral > 0) {
             if (!moved_resources.has(Mineral)) {
               tile.cell.minerals += 1;
               adjacent_tile.resources.Mineral -= 1
@@ -366,7 +369,7 @@ export class Game {
             }
           }
 
-          if (tile.cell.water < MAX_WATER && adjacent_tile.resources.Water > 0) {
+          if (tile.cell.water < this.config.maxWater && adjacent_tile.resources.Water > 0) {
             if (!moved_resources.has(Water)) {
               tile.cell.water += 1;
               adjacent_tile.resources.Water -= 1;
@@ -375,20 +378,20 @@ export class Game {
           }
 
         } else if (adjacent_tile.type === Sky) {
-          if (tile.cell.sugar > 0 && tile.cell.chloroplasts < MAX_CHLOROPLASTS) {
+          if (tile.cell.sugar > 0 && tile.cell.chloroplasts < this.config.maxChloroplasts) {
             tile.cell.chloroplasts += 1;
             tile.cell.sugar -= 1;
           }
 
           // sky
-          if (tile.cell.carbon < MAX_CARBON) {
+          if (tile.cell.carbon < this.config.maxCarbon) {
             if (!moved_resources.has(Carbon)) {
               tile.cell.carbon += 1;
               // moved_resources.add(Carbon);
             }
           }
 
-          if (tile.cell.sugar < MAX_SUGAR && tile.cell.carbon > 2 && tile.cell.water > 2 && d === North) {
+          if (tile.cell.sugar < this.config.maxSugar && tile.cell.carbon > 2 && tile.cell.water > 2 && d === North) {
             if (!moved_resources.has(Sugar)) {
               tile.cell.sugar += 2 * tile.cell.chloroplasts;
               tile.cell.water -= 1;
@@ -428,7 +431,6 @@ export class Game {
                 return otherOtherTile.type !== InvisibleBorder && !otherOtherTile.cell;
               }).length
               if (countSpaces >= 2) {
-                console.log('preferred direction', countSpaces)
                 preferredDirection = d
               }
             }

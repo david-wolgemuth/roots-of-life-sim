@@ -7,8 +7,9 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="">
+        <script type="module" src="app.js"></script>
         <style>
-            #container {
+            #grid {
                 display: flex;
             }
             .tile {
@@ -18,13 +19,64 @@
                 font-size: 4px;
                 cursor: pointer;
             }
+            form[name=configuration] {
+            }
+            .form-control {
+                margin-block-start: 1em;
+                margin-block-end: 1em;
+            }
+            .form-control label, .form-control input {
+                display: block;
+            }
             #hover-modal {
                 position: absolute;
             }
+
         </style>
     </head>
     <body>
         <div id="hover-modal"></div>
-        <script type="module" src="app.js"></script>
+        <form name="configuration" method="get" action="/">
+            <div class="form-control">
+                <label for="gridRadius">Grid Width (x2)</label>
+                <input type="number" id="gridRadius" name="gridRadius" data-default="36">
+            </div>
+            <div class="form-control">
+                <label for="tickRate">Tick Rate (ms - lower is faster)</label>
+                <input type="number" id="tickRate" name="tickRate" data-default="10">
+            </div>
+
+            <div class="form-control">
+                <label for="maxWater">Max Water</label>
+                <input type="number" id="maxWater" name="maxWater" data-default="10">
+            </div>
+            <div class="form-control">
+                <label for="maxMinerals">Max Minerals</label>
+                <input type="number" id="maxMinerals" name="maxMinerals" data-default="10">
+            </div>
+            <div class="form-control">
+                <label for="maxCarbon">Max Carbon</label>
+                <input type="number" id="maxCarbon" name="maxCarbon" data-default="10">
+            </div>
+            <div class="form-control">
+                <label for="maxSugar">Max Sugar</label>
+                <input type="number" id="maxSugar" name="maxSugar" data-default="10">
+            </div>
+            <div class="form-control">
+                <label for="maxChloroplasts">Max Chloroplasts</label>
+                <input type="number" id="maxChloroplasts" name="maxChloroplasts" data-default="10">
+            </div>
+
+            <button type="submit">go</button>
+        </form>
+        <div id="grid">
+            <!--
+            ex:
+                <div class="row">
+                    <div class="tile" id="tile-38-0" data-x="2" data-y="-36" title="x: 2, y: -36" style="background: skyblue;"></div>
+                    <div class="tile" id="tile-38-1" data-x="2" data-y="-35" title="x: 2, y: -35" style="background: skyblue;"></div>
+                </div>
+            -->
+        </div>
     </body>
 </html>

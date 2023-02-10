@@ -1,34 +1,20 @@
+import Config from './config.js';
 import { Game, Sky, Dirt } from './game.js';
 
-const RADIUS = 36; // not actually radius
-const GRID_SIZE = RADIUS * 2 + 1;
-
-const GAME_WIDTH = 64;
-
-const TICK_RATE = 10;
-
-const COLORS = [
-  'DarkOliveGreen',
-  'DarkSeaGreen',
-  'DarkTurquoise',
-  'Green',
-  'Olive',
-  'ForestGreen',
-  'LightSeaGreen',
-  'MediumSeaGreen',
-  'OliveDrab',
-  'SeaGreen',
-]
 
 class GameApp {
   constructor() {
-    this.game = new Game(GAME_WIDTH);
+    this.config = Config.buildFromDocument()
+    console.log(this.config)
+    this.game = new Game(this.config);
     document.addEventListener("keypress", (e) => this.onkeypress(e));
     this.organismColors = {};
+    this.center_x = 0;
+    this.center_y = 0;
   }
 
   run() {
-    this.interval = setInterval(() => this.game_loop(), TICK_RATE);
+    this.interval = setInterval(() => this.game_loop(), this.config.tickRate);
   }
 
   game_loop() {
@@ -56,8 +42,8 @@ class GameApp {
   }
 
   moveCursor(x, y) {
-    this.game.cursor_x += x;
-    this.game.cursor_y += y;
+    this.center_x += x;
+    this.center_y += y;
     this.update_display();
   }
 
@@ -65,13 +51,13 @@ class GameApp {
     const data = [
       // (x, y, tileDivId, tile, visible)
     ];
-    for (let i = 0; i < GRID_SIZE; i += 1) {
-      for (let j = 0; j < GRID_SIZE; j += 1) {
+    for (let i = 0; i < this.config.gridWidth; i += 1) {
+      for (let j = 0; j < this.config.gridWidth; j += 1) {
         // # if (i + j < 2) or ()
-        const x = this.game.cursor_x + i - RADIUS;
-        const y = this.game.cursor_y + j - RADIUS;
+        const x = this.center_x + i - this.config.gridRadius;
+        const y = this.center_y + j - this.config.gridRadius;
 
-        // # dist = abs(this.game.cursor_x - x) + abs(this.game.cursor_y - y)
+        // # dist = abs(this.center_x - x) + abs(this.center_y - y)
         // # visible = dist < RADIUS + 1
         const tileDivId = `tile-${i}-${j}`;
         const tile = this.game.tiles.get(x, y);
@@ -90,11 +76,6 @@ class GameApp {
       const tileDiv = document.querySelector("#" + tile_data["tileDivId"]);
       this._update_tile_tileDiv(tileDiv, tile_data["tile"]);
     }
-
-    this._update_tile_info(
-      document.querySelector("#tile-info"),
-      this.game.get_selected_tile()
-    );
   }
 
   _update_tile_tileDiv(tileDiv, tile) {
@@ -106,19 +87,10 @@ class GameApp {
     if (tile.cell) {
       const cell = tile.cell;
       if (cell.is_dead) {
-        // const color = this.organismColors[cell.organismId];
-        // tileDiv.style.background = color;
         tileDiv.style.outline = '1px dashed tan'
         tileDiv.innerHTML = "";
       } else {
         tileDiv.style.outline = ''
-        // let color;
-        // if (this.organismColors[cell.organismId]) {
-        //   color = this.organismColors[cell.organismId];
-        // } else {
-        //   this.organismColors[cell.organismId] = COLORS[Math.floor(Math.random()*COLORS.length)]
-        //   color = this.organismColors[cell.organismId];
-        // }
         if (cell.chloroplasts < 5) {
           if (cell.water < 5) {
             tileDiv.style.background = 'GoldenRod';
@@ -188,22 +160,17 @@ class GameApp {
   }
 
   setupLayout() {
-    const tile_info_data_table = document.createElement("div");
-    tile_info_data_table.id = "tile-info";
-    this._update_tile_info(tile_info_data_table, this.game.get_selected_tile());
+    const grid = document.getElementById("grid");
 
-    const container = document.createElement("div");
-    container.id = "container";
-
-    for (let i = 0; i < GRID_SIZE; i += 1) {
+    for (let i = 0; i < this.config.gridWidth; i += 1) {
       const row = document.createElement("div");
       row.classList.add("row");
-      for (let j = 0; j < GRID_SIZE; j += 1) {
+      for (let j = 0; j < this.config.gridWidth; j += 1) {
         // # if (i + j < 2) or ()
-        const x = this.game.cursor_x + i - RADIUS;
-        const y = this.game.cursor_y + j - RADIUS;
+        const x = this.center_x + i - this.config.gridRadius;
+        const y = this.center_y + j - this.config.gridRadius;
 
-        // # dist = abs(this.game.cursor_x - x) + abs(this.game.cursor_y - y)
+        // # dist = abs(this.center_x - x) + abs(this.center_y - y)
         // # visible = dist < RADIUS + 1
         const tileDivId = `tile-${i}-${j}`;
         const tile = this.game.tiles.get(x, y);
@@ -211,7 +178,6 @@ class GameApp {
         const tileDiv = document.createElement("div");
         tileDiv.classList.add("tile");
         tileDiv.id = tileDivId;
-
         tileDiv.onclick = e => this.onClickTile(e);
 
         // tileDiv.onmouseenter = e => this.onMouseEnter(e);
@@ -221,10 +187,8 @@ class GameApp {
 
         row.appendChild(tileDiv);
       }
-      container.appendChild(row);
+      grid.appendChild(row);
     }
-    document.body.appendChild(container);
-    document.body.appendChild(tile_info_data_table);
 
     const timer = document.createElement("div");
     timer.id = "timer";
