@@ -1,193 +1,23 @@
 import Config from './config.js';
+import { LifeCell } from './cell.js';
+import { Tile, TileGrid } from './grid.js';
+import {
+  North,
+  South,
+  East,
+  West,
+  Water,
+  Sugar,
+  Mineral,
+  Carbon,
+  Dirt,
+  Sky,
+  InvisibleBorder,
+} from './constants.js';
+import { shuffle } from './utils.js';
 
-const CardinalDirection = {
-  North: "North",
-  South: "South",
-  East: "East",
-  West: "West",
-};
-
-const Resource = {
-  Mineral: "Mineral",
-  Sugar: "Sugar",
-  Water: "Water",
-  Carbon: "Carbon",
-};
-
-const TileType = {
-  Dirt: "Dirt",
-  Sky: "Sky",
-  InvisibleBorder: "InvisibleBorder",
-}
-
-export const { North, South, East, West } = CardinalDirection;
-export const { Water, Sugar, Mineral, Carbon } = Resource;
-export const { Dirt, Sky, InvisibleBorder } = TileType
 
 const DETERIORATION_AGE = 120;
-
-function _shuffle(array) {
-  // NOTE - modifies input
-  //
-  // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
-  //
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
-
-class LifeCell {
-  // all resources max capacity of 10
-  constructor(config, {
-    minerals,
-    sugar,
-    water,
-    carbon,
-    chloroplasts,
-  }) {
-    this.config = config;
-
-    this.minerals = minerals || 0;
-    this.sugar = sugar || 0;
-    this.water = water || 0;
-    this.carbon = carbon || 0;
-    this.chloroplasts = chloroplasts || 0;
-
-    this.age = 0;
-    this.death_age = null;
-  }
-
-  /**
-   * @param {Config} config
-   */
-  static seed(config) {
-    return new LifeCell(config, {
-      minerals: config.maxMinerals * 12,
-      sugar: config.maxSugar * 48,
-      water: config.maxWater * 12,
-      carbon: config.maxCarbon * 12,
-      chloroplasts: config.maxChloroplasts * 4,
-    });
-  }
-
-  get is_dead() {
-    return Boolean(this.death_age)
-  }
-
-  check_can_reproduce() {
-    if (this.chloroplasts > this.config.maxChloroplasts / 2) {
-      // leaf
-      return this.sugar >= this.config.maxSugar - 2 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
-    } else {
-      // root
-      return this.water >= this.config.maxWater / 2 && this.sugar > 2 && this.minerals > 2 && this.carbon > 2;
-    }
-  }
-
-  reproduce() {
-    const cell = new LifeCell(this.config, {});
-    cell.minerals = Math.floor(this.minerals / 2);
-    this.minerals = Math.floor(this.minerals / 2);
-
-    cell.sugar = Math.floor(this.sugar / 2);
-    this.sugar = Math.floor(this.sugar / 2);
-
-    cell.water = Math.floor(this.water / 2);
-    this.water = Math.floor(this.water / 2);
-
-    cell.carbon = Math.floor(this.carbon / 2);
-    this.carbon = Math.floor(this.carbon / 2);
-
-    cell.chloroplasts = Math.floor(this.chloroplasts / 2);
-    this.chloroplasts = Math.floor(this.chloroplasts / 2);
-
-    return cell;
-  }
-}
-
-class Tile {
-  constructor({ x, y, type, cell, resources }) {
-    this.x = x;
-    this.y = y;
-    this.type = type;
-    this.cell = cell;
-    this.resources = resources || {
-      Water: 0,
-      Mineral: 0,
-    }
-  }
-
-  adjacent_point(direction) {
-    switch (direction) {
-      case North:
-        return [this.x, this.y - 1];
-      case South:
-        return [this.x, this.y + 1];
-      case East:
-        return [this.x + 1, this.y];
-      case West:
-        return [this.x - 1, this.y];
-      default:
-        console.warn("no point found...");
-        return [Infinity, Infinity];
-    }
-  }
-}
-
-class TileGrid {
-  /**
-   * @param {Config} config
-   */
-  constructor(config) {
-    this.config = config;
-    this.tiles = {};
-  }
-
-  get(x, y) {
-    const key = `${x}_${y}`;
-    if (this.tiles[key]) {
-      return this.tiles[key];
-    } else {
-      let tile;
-      if (Math.abs(x) > this.config.gridWidth / 2) {
-        tile = new Tile({ x, y, type: InvisibleBorder });
-      } else if (y >= 0) {
-        // negative is north
-        tile = new Tile({
-          x,
-          y,
-          type: Dirt,
-          resources: {
-            Mineral: this.config.maxMinerals * 3,
-            // deeper has more water
-            Water: y + 8,  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
-          }
-        });
-      } else {
-        tile = new Tile({ x, y, type: Sky });
-      }
-      this.tiles[key] = tile;
-      return tile;
-    }
-  }
-}
-
-function max(a, b, key) {
-  if (key(a) >= key(b)) {
-    return a;
-  } else {
-    return b;
-  }
-}
-function min(a, b, key) {
-  if (key(a) < key(b)) {
-    return a;
-  } else {
-    return b;
-  }
-}
 
 /**
  *
@@ -271,95 +101,17 @@ export class Game {
         tile.cell.death_age = tile.cell.age;
         continue;
       }
-      if (tile.cell.age % 20 === 0) {
+      if (tile.cell.age % this.config.ticksToConsumeSugar === 0) {
         tile.cell.sugar -= 1;
       }
       const moved_resources = new Set();
 
-      for (const d of _shuffle([West, South, East, North])) {
+      for (const d of shuffle([West, South, East, North])) {
         const adjacent_tile = this.tiles.get(...tile.adjacent_point(d));
 
-        if (adjacent_tile.cell && adjacent_tile.cell.organismId === tile.cell.organismId) {
-          const a = tile.cell;
-          const [ax, ay] = [tile.x, tile.y];
-          const b = adjacent_tile.cell;
-          const [bx, by] = [adjacent_tile.x, adjacent_tile.y];
+        if (adjacent_tile.cell) {
+          tile.cell.shareResources(adjacent_tile.cell, already_balanced, moved_resources);
 
-          const hash_value = `${Math.min(ax, bx)},${Math.min(
-            ay,
-            by
-          )},${Math.max(ax, bx)},${Math.max(ay, by)}`;
-
-          if (already_balanced.has(hash_value)) {
-            // already balanced
-            continue;
-          }
-
-          let from_cell, to_cell;
-
-          from_cell = max(a, b, (cell) => cell.water);
-          to_cell = min(a, b, (cell) => cell.water);
-          if (
-            !to_cell.is_dead &&
-            from_cell.water > 0 &&
-            (to_cell.water < this.config.maxWater) &
-              (Math.abs(from_cell.water - to_cell.water) > 1)
-          ) {
-            if (!moved_resources.has(Water)) {
-              from_cell.water -= 1;
-              to_cell.water += 1;
-              moved_resources.add(Water);
-              already_balanced.add(hash_value);
-            }
-          }
-
-          from_cell = max(a, b, (cell) => cell.minerals);
-          to_cell = min(a, b, (cell) => cell.minerals);
-          if (
-            !to_cell.is_dead &&
-            from_cell.minerals > 0 &&
-            (to_cell.minerals < this.config.maxMinerals) &
-              (Math.abs(from_cell.minerals - to_cell.minerals) > 1)
-          ) {
-            if (!moved_resources.has(Mineral)) {
-              from_cell.minerals -= 1;
-              to_cell.minerals += 1;
-              moved_resources.add(Mineral);
-              already_balanced.add(hash_value);
-            }
-          }
-
-          from_cell = max(a, b, (cell) => cell.sugar);
-          to_cell = min(a, b, (cell) => cell.sugar);
-          if (
-            !to_cell.is_dead &&
-            from_cell.sugar > 5 &&
-            (to_cell.sugar < this.config.maxSugar) &
-              (Math.abs(from_cell.sugar - to_cell.sugar) > 1)
-          ) {
-            if (!moved_resources.has(Sugar)) {
-              from_cell.sugar -= 2;
-              to_cell.sugar += 2;
-              moved_resources.add(Sugar);
-              already_balanced.add(hash_value);
-            }
-          }
-
-          from_cell = max(a, b, (cell) => cell.carbon);
-          to_cell = min(a, b, (cell) => cell.carbon);
-          if (
-            !to_cell.is_dead &&
-            from_cell.carbon > 0 &&
-            (to_cell.carbon < this.config.maxCarbon) &
-              (Math.abs(from_cell.carbon - to_cell.carbon) > 1)
-          ) {
-            if (!moved_resources.has(Carbon)) {
-              from_cell.carbon -= 1;
-              to_cell.carbon += 1;
-              moved_resources.add(Carbon);
-              already_balanced.add(hash_value);
-            }
-          }
         } else if (adjacent_tile.type === Dirt) {
           if (tile.cell.minerals < this.config.maxMinerals && adjacent_tile.resources.Mineral > 0) {
             if (!moved_resources.has(Mineral)) {
@@ -462,7 +214,7 @@ export class Game {
     Object.values(this.tiles.tiles).filter((tile) => {
       return !tile.cell && tile.type === Dirt
     }).forEach(tile => {
-      for (const d of _shuffle([East, West, South])) {
+      for (const d of shuffle([East, West, South])) {
         const [x, y] = tile.adjacent_point(d);
 
         const [ax, ay] = [tile.x, tile.y];

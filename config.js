@@ -10,6 +10,8 @@ export default class Config {
     maxCarbon,
     maxMinerals,
     maxChloroplasts,
+
+    ticksToConsumeSugar,
   }) {
     this.gridRadius = Number(gridRadius);
     this.tickRate = Number(tickRate);
@@ -21,6 +23,8 @@ export default class Config {
     this.maxCarbon = Number(maxCarbon);
     this.maxMinerals = Number(maxMinerals);
     this.maxChloroplasts = Number(maxChloroplasts);
+
+    this.ticksToConsumeSugar = Number(ticksToConsumeSugar);
   }
 
   static buildFromDocument() {

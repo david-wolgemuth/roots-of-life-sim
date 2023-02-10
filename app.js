@@ -1,5 +1,6 @@
 import Config from './config.js';
-import { Game, Sky, Dirt } from './game.js';
+import { Game } from './game.js';
+import { Sky, Dirt } from './constants.js';
 
 
 class GameApp {
