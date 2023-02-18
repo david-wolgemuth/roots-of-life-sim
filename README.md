@@ -1,6 +1,8 @@
 
 # Roots of Life
 
+Play with it here: https://david-wolgemuth.github.io/roots-of-life-sim/
+
 heavily inspired by Conway's Game of Life
 
 implemented during the Global Game Jam 2023 https://globalgamejam.org/about
