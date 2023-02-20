@@ -15,6 +15,7 @@ export default class Config {
     requiredAmountOfResourcesToReproduce__root,
 
     ticksToConsumeSugar,
+    ticksToMoveWaterThroughDirt,
   }) {
     this.gridRadius = Number(gridRadius);
     this.tickRate = Number(tickRate);
@@ -31,6 +32,7 @@ export default class Config {
     this.requiredAmountOfResourcesToReproduce__root = Number(requiredAmountOfResourcesToReproduce__root);
 
     this.ticksToConsumeSugar = Number(ticksToConsumeSugar);
+    this.ticksToMoveWaterThroughDirt = Number(ticksToMoveWaterThroughDirt);
   }
 
   static buildFromDocument() {

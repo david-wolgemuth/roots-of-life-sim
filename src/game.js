@@ -210,8 +210,7 @@ export class Game {
       }
     }
 
-    const TICKS_TO_MOVE_WATER = 4
-    if (this.ticks % TICKS_TO_MOVE_WATER === 0) {
+    if (this.ticks % this.config.ticksToMoveWaterThroughDirt === 0) {
       const alreadyBalancedDirt = new Set();
       Object.values(this.tiles.tiles).filter((tile) => {
         return !tile.cell && tile.type === Dirt
@@ -231,8 +230,7 @@ export class Game {
             break;
           }
 
-          const baseWater = Math.floor(tile.y * 1.5 + 8);  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
-          if (tile.resources.water < baseWater && adjacent_tile.type === Dirt && adjacent_tile.resources.Water - 1 > tile.resources.Water) {
+          if (adjacent_tile.type === Dirt && adjacent_tile.resources.Water - 2 > tile.resources.Water) {
             adjacent_tile.resources.Water -= 1
             tile.resources.Water += 1
             alreadyBalancedDirt.add(hash_value)

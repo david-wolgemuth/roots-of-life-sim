@@ -66,7 +66,7 @@ export class TileGrid {
           resources: {
             Mineral: this.config.maxMinerals * 3,
             // deeper has more water
-            Water: Math.floor(y * 2.5 + 8),  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
+            Water: Math.floor(y * 1.5 + 8),  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
           }
         });
       } else {
