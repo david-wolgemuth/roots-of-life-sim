@@ -33,11 +33,11 @@ export class LifeCell {
    */
   static seed(config) {
     return new LifeCell(config, {
-      minerals: config.maxMinerals * 12,
-      sugar: config.maxSugar * 48,
-      water: config.maxWater * 12,
-      carbon: config.maxCarbon * 12,
-      chloroplasts: config.maxChloroplasts * 4,
+      minerals: config.maxMinerals * 4,
+      sugar: config.maxSugar * 6,
+      water: config.maxWater * 4,
+      carbon: config.maxCarbon * 4,
+      chloroplasts: config.maxChloroplasts * 2,
     });
   }
 
@@ -48,10 +48,20 @@ export class LifeCell {
   check_can_reproduce() {
     if (this.chloroplasts > this.config.maxChloroplasts / 2) {
       // leaf
-      return this.sugar >= this.config.maxSugar - 2 && this.water > 4 && this.carbon > 4 && this.minerals > 2;
+      return (
+        this.sugar >= this.config.requiredAmountOfResourcesToReproduce__leaf
+        && this.water >= this.config.requiredAmountOfResourcesToReproduce__leaf
+        && this.carbon >= this.config.requiredAmountOfResourcesToReproduce__leaf
+        && this.minerals >= this.config.requiredAmountOfResourcesToReproduce__leaf
+      );
     } else {
       // root
-      return this.water >= this.config.maxWater / 2 && this.sugar > 2 && this.minerals > 2 && this.carbon > 2;
+      return (
+        this.water >= this.config.requiredAmountOfResourcesToReproduce__root
+        && this.sugar >= this.config.requiredAmountOfResourcesToReproduce__root
+        && this.minerals >= this.config.requiredAmountOfResourcesToReproduce__root
+        && this.carbon >= this.config.requiredAmountOfResourcesToReproduce__root
+      );
     }
   }
 
@@ -110,7 +120,7 @@ export class LifeCell {
         from_cell.water -= 1;
         to_cell.water += 1;
         tileMovedResourcesSet.add(Water);
-        alreadyBalancedSet.add(hash_value);
+        // alreadyBalancedSet.add(hash_value);
       }
     }
 
@@ -126,7 +136,7 @@ export class LifeCell {
         from_cell.minerals -= 1;
         to_cell.minerals += 1;
         tileMovedResourcesSet.add(Mineral);
-        alreadyBalancedSet.add(hash_value);
+        // alreadyBalancedSet.add(hash_value);
       }
     }
 
@@ -142,7 +152,7 @@ export class LifeCell {
         from_cell.sugar -= 2;
         to_cell.sugar += 2;
         tileMovedResourcesSet.add(Sugar);
-        alreadyBalancedSet.add(hash_value);
+        // alreadyBalancedSet.add(hash_value);
       }
     }
 
@@ -158,7 +168,7 @@ export class LifeCell {
         from_cell.carbon -= 1;
         to_cell.carbon += 1;
         tileMovedResourcesSet.add(Carbon);
-        alreadyBalancedSet.add(hash_value);
+        // alreadyBalancedSet.add(hash_value);
       }
     }
   }

@@ -139,16 +139,16 @@ export class Game {
           if (tile.cell.carbon < this.config.maxCarbon) {
             if (!moved_resources.has(Carbon)) {
               tile.cell.carbon += 1;
-              // moved_resources.add(Carbon);
+              moved_resources.add(Carbon);
             }
           }
 
           if (tile.cell.sugar < this.config.maxSugar && tile.cell.carbon > 2 && tile.cell.water > 2 && d === North) {
             if (!moved_resources.has(Sugar)) {
-              tile.cell.sugar += 2 * tile.cell.chloroplasts;
+              tile.cell.sugar += Math.ceil(0.2 * tile.cell.chloroplasts);
               tile.cell.water -= 1;
               tile.cell.carbon -= 1;
-              // moved_resources.add(Sugar);
+              moved_resources.add(Sugar);
             }
           }
         }
@@ -210,33 +210,37 @@ export class Game {
       }
     }
 
-    const alreadyBalancedDirt = new Set();
-    Object.values(this.tiles.tiles).filter((tile) => {
-      return !tile.cell && tile.type === Dirt
-    }).forEach(tile => {
-      for (const d of shuffle([East, West, South])) {
-        const [x, y] = tile.adjacent_point(d);
+    const TICKS_TO_MOVE_WATER = 4
+    if (this.ticks % TICKS_TO_MOVE_WATER === 0) {
+      const alreadyBalancedDirt = new Set();
+      Object.values(this.tiles.tiles).filter((tile) => {
+        return !tile.cell && tile.type === Dirt
+      }).forEach(tile => {
+        for (const d of shuffle([East, West, South])) {
+          const [x, y] = tile.adjacent_point(d);
 
-        const [ax, ay] = [tile.x, tile.y];
-        const adjacent_tile = this.tiles.get(x, y)
-        const [bx, by] = [adjacent_tile.x, adjacent_tile.y];
-        const hash_value = `${Math.min(ax, bx)},${Math.min(
-          ay,
-          by
-        )},${Math.max(ax, bx)},${Math.max(ay, by)}`;
-        if (alreadyBalancedDirt.has(hash_value)) {
-          // already balanced
-          break;
-        }
+          const [ax, ay] = [tile.x, tile.y];
+          const adjacent_tile = this.tiles.get(x, y)
+          const [bx, by] = [adjacent_tile.x, adjacent_tile.y];
+          const hash_value = `${Math.min(ax, bx)},${Math.min(
+            ay,
+            by
+          )},${Math.max(ax, bx)},${Math.max(ay, by)}`;
+          if (alreadyBalancedDirt.has(hash_value)) {
+            // already balanced
+            break;
+          }
 
-        if (adjacent_tile.type === Dirt && adjacent_tile.resources.Water - 2 > tile.resources.Water) {
-          adjacent_tile.resources.Water -= 1
-          tile.resources.Water += 1
-          alreadyBalancedDirt.add(hash_value)
-          break;
+          const baseWater = Math.floor(tile.y * 1.5 + 8);  // ex: 4,4,4,4,8,8,8,8,12,12,12,12...
+          if (tile.resources.water < baseWater && adjacent_tile.type === Dirt && adjacent_tile.resources.Water - 1 > tile.resources.Water) {
+            adjacent_tile.resources.Water -= 1
+            tile.resources.Water += 1
+            alreadyBalancedDirt.add(hash_value)
+            break;
+          }
         }
-      }
-    });
+      });
+    }
 
     this.ticks += 1;
   }

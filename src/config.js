@@ -11,6 +11,9 @@ export default class Config {
     maxMinerals,
     maxChloroplasts,
 
+    requiredAmountOfResourcesToReproduce__leaf,
+    requiredAmountOfResourcesToReproduce__root,
+
     ticksToConsumeSugar,
   }) {
     this.gridRadius = Number(gridRadius);
@@ -23,6 +26,9 @@ export default class Config {
     this.maxCarbon = Number(maxCarbon);
     this.maxMinerals = Number(maxMinerals);
     this.maxChloroplasts = Number(maxChloroplasts);
+
+    this.requiredAmountOfResourcesToReproduce__leaf = Number(requiredAmountOfResourcesToReproduce__leaf);
+    this.requiredAmountOfResourcesToReproduce__root = Number(requiredAmountOfResourcesToReproduce__root);
 
     this.ticksToConsumeSugar = Number(ticksToConsumeSugar);
   }
